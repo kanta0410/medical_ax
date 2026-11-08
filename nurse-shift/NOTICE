@@ -1,0 +1,6 @@
+This demo depends on Google OR-Tools, which is licensed under the Apache License, Version 2.0.
+https://github.com/google/or-tools/blob/stable/LICENSE
+http://www.apache.org/licenses/LICENSE-2.0
+
+OR-Tools is not vendored in this tree. The Dockerfile installs it from PyPI when an image is built.
+No image was published from this workspace.

@@ -1,0 +1,154 @@
+:root {
+  --ink: #16302c;
+  --muted: #3e5c56;
+  --paper: #f3faf7;
+  --card: #ffffff;
+  --line: #c5ddd6;
+  --teal: #0f6e68;
+  --teal-deep: #0b3d3a;
+  --short: #9f1239;
+  --short-bg: #fff1f2;
+  --day: #e7f6f2;
+  --evening: #d9ecf7;
+  --night: #e7e9f6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font: 16px/1.5 "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+}
+
+.banner {
+  /* sticky禁止: full_pageスクショで帯が中段に再描画され副題・人数帯に重なる */
+  position: relative;
+  z-index: 5;
+  background: var(--teal-deep);
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.7rem 1rem;
+}
+
+main {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto 3rem;
+}
+
+h1 { font-size: 1.7rem; margin: 1rem 0 0.3rem; }
+h2 { font-size: 1.15rem; margin: 0 0 0.6rem; }
+
+.disclaimer { color: var(--muted); margin-top: 0; }
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.7rem;
+  margin: 1rem 0;
+}
+
+.metrics div, .card, .status {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.metrics div { padding: 0.8rem 1rem; }
+.metrics strong { display: block; font-size: 1.6rem; color: var(--teal-deep); }
+.metrics span { color: var(--muted); font-size: 0.92rem; }
+
+.status, .card { padding: 1rem; margin: 0.8rem 0 1rem; }
+.status p { margin: 0.3rem 0; }
+
+.alert {
+  background: var(--short-bg);
+  color: var(--short);
+  border: 1px solid var(--short);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+}
+
+.legend { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; margin: 0.4rem 0 0; list-style: none; }
+.legend li { border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.7rem; background: #fff; }
+
+.vacancy { border-left: 6px solid var(--short); }
+.vacancy header { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.tag {
+  color: var(--short);
+  font-weight: 700;
+}
+.offers { list-style: none; padding: 0; display: grid; gap: 0.7rem; }
+.offer { border: 1px solid var(--line); border-radius: 12px; padding: 0.8rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+
+button {
+  background: var(--teal);
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  cursor: pointer;
+}
+button.secondary { background: #fff; color: var(--teal-deep); border: 1px solid var(--teal); }
+button.danger { background: var(--short); }
+button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
+
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+table { border-collapse: collapse; min-width: 980px; width: 100%; }
+th, td { border-bottom: 1px solid var(--line); padding: 0.35rem; text-align: center; font-size: 0.82rem; }
+th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: #fff; min-width: 8rem; }
+.role { display: block; color: var(--muted); font-weight: 400; }
+.D { background: var(--day); }
+.E { background: var(--evening); }
+.N { background: var(--night); }
+.short { background: var(--short-bg); color: var(--short); font-weight: 700; box-shadow: inset 0 0 0 2px var(--short); }
+.absent { color: var(--muted); }
+.filled { background: #ecfdf3; font-weight: 700; }
+.cell-form { margin: 0; }
+.cell-form button { min-height: 36px; padding: 0.2rem 0.35rem; font-size: 0.75rem; background: transparent; color: inherit; }
+
+.coverage { display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.4rem; }
+.day-count { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 0.4rem 0.5rem; min-width: 7rem; }
+.day-count p { margin: 0.15rem 0; }
+.short-line { color: var(--short); font-weight: 700; }
+
+@media (max-width: 700px) {
+  .metrics { grid-template-columns: 1fr; }
+  main { width: min(100% - 1rem, 1180px); }
+}
+
+/* edge-demo: sticky vacancy + scroll offers */
+.vacancy {
+  display: grid;
+  gap: 0.7rem;
+}
+.vacancy header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--card);
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+.offers {
+  max-height: min(42vh, 28rem);
+  overflow-y: auto;
+  padding-right: 0.2rem;
+  scroll-margin-top: 6rem;
+}
+.vacancy details {
+  background: #f8fbfa;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.4rem 0.7rem;
+}
+.vacancy details[open] {
+  max-height: min(30vh, 16rem);
+  overflow-y: auto;
+}

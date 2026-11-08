@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ snap.facility }}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <p class="banner">架空データ・外部送信なし</p>
+  <main>
+    <h1>{{ snap.facility }}</h1>
+    <p class="disclaimer">{{ snap.disclaimer }} 休息のデモ設定は {{ snap.rest_hours }} 時間。求解状態は CP-SAT の戻り値です。</p>
+    {% if error %}
+    <p class="alert" role="alert">{{ error }}</p>
+    {% endif %}
+    <section class="metrics" id="metrics">
+      <div><strong id="changed-cells">{{ snap.metrics.changed_cells }}</strong><span>変更セル数（基点との差）</span></div>
+      <div><strong id="unfilled">{{ snap.metrics.unfilled }}</strong><span>未充足の欠員数</span></div>
+      <div><strong id="pref-violations">{{ snap.metrics.preference_violations }}</strong><span>希望違反数</span></div>
+    </section>
+    <section class="status">
+      <p>{{ snap.roster.note }}</p>
+      <p>初期計算の計測時間: {{ snap.roster.solve_ms }} ms</p>
+      <ul class="legend">
+        {% for item in snap.shift_legend %}
+        <li>{{ item.label }} {{ item.time }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section>
+      <h2>人数</h2>
+      <div class="coverage">
+        {% for day in snap.coverage %}
+        <div class="day-count">
+          <strong>{{ day.label }}</strong>
+          {% for shift in day.shifts %}
+          <p class="{% if shift.short %}short-line{% endif %}">
+            {{ shift.label }} {{ shift.have }}/{{ shift.need }}
+            {% if shift.short %}不足{{ shift.short }}人{% else %}充足{% endif %}
+          </p>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    {% for vacancy in snap.vacancies %}
+    <article class="card vacancy" id="vacancy-{{ vacancy.id }}">
+      <header>
+        <h2>欠員#{{ vacancy.id }} {{ vacancy.date_label }} {{ vacancy.shift_label }} {{ vacancy.shift_time }}</h2>
+        <p class="tag">
+          {% if vacancy.status == 'open' %}
+          {{ vacancy.shift_label }} {{ vacancy.have }}/{{ vacancy.need }} 不足{{ vacancy.short }}人
+          {% elif vacancy.fill_route == 'external' %}
+          充足（架空応募: {{ vacancy.filled_external_name }}）
+          {% else %}
+          充足（内部）
+          {% endif %}
+        </p>
+      </header>
+      <p>{{ vacancy.staff_name }}の欠勤。{{ vacancy.solver_note }}</p>
+      {% if vacancy.offers %}
+      <p>適格は絶対条件を満たす候補です。並びは推薦順で、変更セルが少ない案を先にし、同じなら希望違反が少ない案です。この順は最適ではありません。確定するのは、打診に対して先に「入れる」と応答した人です。希望違反が少ない候補が残っていても、すでに応答した適格者が入っています。</p>
+      {% endif %}
+      {% if vacancy.offers %}
+      <ul class="offers">
+        {% for offer in vacancy.offers %}
+        <li class="offer">
+          <strong>{{ offer.name }}</strong>
+          <p>変更セル数 {{ offer.change_count }} / 希望違反数 {{ offer.preference_violations }} / {{ offer.solver_code }}</p>
+          <p>{{ offer.reason }}</p>
+          {% if vacancy.status == 'open' and offer.response == 'proposed' %}
+          <form class="actions" method="post" action="/api/vacancies/{{ vacancy.id }}/ask">
+            <input type="hidden" name="staff_id" value="{{ offer.staff_id }}">
+            <button type="submit">打診する（送信しません）</button>
+          </form>
+          {% elif vacancy.status == 'open' and offer.response == 'asked' %}
+          <div class="actions">
+            <form method="post" action="/api/vacancies/{{ vacancy.id }}/respond">
+              <input type="hidden" name="staff_id" value="{{ offer.staff_id }}">
+              <input type="hidden" name="decision" value="accept">
+              <button type="submit">入れる（再検証して確定）</button>
+            </form>
+            <form method="post" action="/api/vacancies/{{ vacancy.id }}/respond">
+              <input type="hidden" name="staff_id" value="{{ offer.staff_id }}">
+              <input type="hidden" name="decision" value="decline">
+              <button class="secondary" type="submit">無理</button>
+            </form>
+          </div>
+          {% elif offer.response == 'declined' %}
+          <p>無理と応答済み</p>
+          {% elif offer.response == 'accepted' %}
+          <p>この案で確定</p>
+          {% elif vacancy.status == 'filled' %}
+          <p>この欠員はすでに充足しているため、この候補は入れていません。</p>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if vacancy.ineligible %}
+      <details>
+        <summary>入れない人（{{ vacancy.ineligible|length }}）</summary>
+        <ul>
+          {% for offer in vacancy.ineligible %}
+          <li>{{ offer.name }}: {{ offer.reason }}</li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+      {% if vacancy.can_admin %}
+      <form method="post" action="/api/vacancies/{{ vacancy.id }}/admin">
+        <button class="danger" type="submit">管理者として、この欠員の募集シミュレーションを開く</button>
+      </form>
+      {% endif %}
+      {% if vacancy.posting %}
+      <section>
+        <h3>募集シミュレーション #{{ vacancy.posting.id }}（欠員#{{ vacancy.id }}）</h3>
+        <p>{{ vacancy.posting.body }}</p>
+        <p>状態: {{ vacancy.posting.status }}</p>
+        {% if vacancy.posting.status == 'open' %}
+        <div class="actions">
+          <form method="post" action="/api/vacancies/{{ vacancy.id }}/apply">
+            <input type="hidden" name="name" value="桐谷 透">
+            <input type="hidden" name="night_ok" value="1">
+            <input type="hidden" name="leader" value="1">
+            <button type="submit">架空の応募を検証する</button>
+          </form>
+          {% if vacancy.shift in ('E', 'N') or vacancy.leaders_on_day == 0 %}
+          <form method="post" action="/api/vacancies/{{ vacancy.id }}/apply">
+            <input type="hidden" name="name" value="架空 資格不足">
+            <input type="hidden" name="night_ok" value="0">
+            <input type="hidden" name="leader" value="0">
+            <button class="secondary" type="submit">資格不足の応募を試す</button>
+          </form>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% if vacancy.posting.applications %}
+        <ul>
+          {% for app in vacancy.posting.applications %}
+          <li>{{ app.applicant_name }}: {{ app.reason }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </section>
+      {% endif %}
+    </article>
+    {% endfor %}
+
+    <section>
+      <h2>勤務表</h2>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>スタッフ</th>
+              {% for day in snap.dates %}
+              <th>{{ day.label }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for person in snap.staff %}
+            <tr>
+              <th>{{ person.name }}<span class="role">{{ person.role }}</span></th>
+              {% for cell in person.cells %}
+              <td class="{{ cell.kind }}">
+                {% if cell.workable and snap.accepting_absence %}
+                <form class="cell-form" method="post" action="/api/vacancies">
+                  <input type="hidden" name="staff_id" value="{{ person.id }}">
+                  <input type="hidden" name="day" value="{{ cell.day }}">
+                  <button type="submit">{{ cell.text }}<br>この勤務を欠勤にする</button>
+                </form>
+                {% else %}
+                {{ cell.text }}
+                {% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <form method="post" action="/api/reset">
+      <button class="secondary" type="submit">架空の勤務表を計算し直す</button>
+    </form>
+  </main>
+</body>
+</html>

@@ -1,0 +1,39 @@
+# Repo-level exclusions. The preserved app keeps its own nurse-shift/.gitignore unchanged.
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials*.json
+service-account*.json
+.secrets/
+
+# Environments and caches
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.idea/
+.vscode/
+.DS_Store
+
+# Local data and logs
+data/
+*.sqlite
+*.sqlite-journal
+*.sqlite3
+*.db
+*.log
+
+# Archives and generated demo media
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.mp4
+*.webm
+demo-artifacts/
+demo-artifacts-*/
