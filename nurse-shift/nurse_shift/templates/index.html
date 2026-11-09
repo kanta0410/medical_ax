@@ -4,52 +4,43 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ snap.facility }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
   <p class="banner">架空データ・外部送信なし</p>
+
+  <header class="ward">
+    <div class="ward-title">
+      <h1>{{ snap.facility }}</h1>
+      <p class="disclaimer">{{ snap.disclaimer }} 休息のデモ設定は {{ snap.rest_hours }} 時間。求解状態は CP-SAT の戻り値です。</p>
+    </div>
+    <dl class="metrics" id="metrics">
+      <div class="{% if snap.metrics.unfilled %}is-alert{% endif %}">
+        <dt>未充足の欠員数</dt><dd id="unfilled">{{ snap.metrics.unfilled }}</dd>
+      </div>
+      <div>
+        <dt>変更セル数（基点との差）</dt><dd id="changed-cells">{{ snap.metrics.changed_cells }}</dd>
+      </div>
+      <div>
+        <dt>希望違反数</dt><dd id="pref-violations">{{ snap.metrics.preference_violations }}</dd>
+      </div>
+    </dl>
+  </header>
+
   <main>
-    <h1>{{ snap.facility }}</h1>
-    <p class="disclaimer">{{ snap.disclaimer }} 休息のデモ設定は {{ snap.rest_hours }} 時間。求解状態は CP-SAT の戻り値です。</p>
     {% if error %}
     <p class="alert" role="alert">{{ error }}</p>
     {% endif %}
-    <section class="metrics" id="metrics">
-      <div><strong id="changed-cells">{{ snap.metrics.changed_cells }}</strong><span>変更セル数（基点との差）</span></div>
-      <div><strong id="unfilled">{{ snap.metrics.unfilled }}</strong><span>未充足の欠員数</span></div>
-      <div><strong id="pref-violations">{{ snap.metrics.preference_violations }}</strong><span>希望違反数</span></div>
-    </section>
-    <section class="status">
-      <p>{{ snap.roster.note }}</p>
-      <p>初期計算の計測時間: {{ snap.roster.solve_ms }} ms</p>
-      <ul class="legend">
-        {% for item in snap.shift_legend %}
-        <li>{{ item.label }} {{ item.time }}</li>
-        {% endfor %}
-      </ul>
-    </section>
 
-    <section>
-      <h2>人数</h2>
-      <div class="coverage">
-        {% for day in snap.coverage %}
-        <div class="day-count">
-          <strong>{{ day.label }}</strong>
-          {% for shift in day.shifts %}
-          <p class="{% if shift.short %}short-line{% endif %}">
-            {{ shift.label }} {{ shift.have }}/{{ shift.need }}
-            {% if shift.short %}不足{{ shift.short }}人{% else %}充足{% endif %}
-          </p>
-          {% endfor %}
-        </div>
-        {% endfor %}
-      </div>
-    </section>
-
+    {% if snap.vacancies %}
+    <section class="vacancies" aria-label="欠員">
     {% for vacancy in snap.vacancies %}
-    <article class="card vacancy" id="vacancy-{{ vacancy.id }}">
+    <article class="vacancy {% if vacancy.status == 'open' %}is-open{% else %}is-filled{% endif %}" id="vacancy-{{ vacancy.id }}">
       <header>
-        <h2>欠員#{{ vacancy.id }} {{ vacancy.date_label }} {{ vacancy.shift_label }} {{ vacancy.shift_time }}</h2>
+        <h2>欠員#{{ vacancy.id }} {{ vacancy.date_label }} <span class="chip chip-{{ vacancy.shift }}">{{ vacancy.shift_label }}</span> {{ vacancy.shift_time }}</h2>
         <p class="tag">
           {% if vacancy.status == 'open' %}
           {{ vacancy.shift_label }} {{ vacancy.have }}/{{ vacancy.need }} 不足{{ vacancy.short }}人
@@ -60,17 +51,17 @@
           {% endif %}
         </p>
       </header>
-      <p>{{ vacancy.staff_name }}の欠勤。{{ vacancy.solver_note }}</p>
+      <p class="lead">{{ vacancy.staff_name }}の欠勤。{{ vacancy.solver_note }}</p>
       {% if vacancy.offers %}
-      <p>適格は絶対条件を満たす候補です。並びは推薦順で、変更セルが少ない案を先にし、同じなら希望違反が少ない案です。この順は最適ではありません。確定するのは、打診に対して先に「入れる」と応答した人です。希望違反が少ない候補が残っていても、すでに応答した適格者が入っています。</p>
-      {% endif %}
-      {% if vacancy.offers %}
-      <ul class="offers">
+      <p class="note">適格は絶対条件を満たす候補です。並びは推薦順で、変更セルが少ない案を先にし、同じなら希望違反が少ない案です。この順は最適ではありません。確定するのは、打診に対して先に「入れる」と応答した人です。希望違反が少ない候補が残っていても、すでに応答した適格者が入っています。</p>
+      <ol class="offers">
         {% for offer in vacancy.offers %}
-        <li class="offer">
-          <strong>{{ offer.name }}</strong>
-          <p>変更セル数 {{ offer.change_count }} / 希望違反数 {{ offer.preference_violations }} / {{ offer.solver_code }}</p>
-          <p>{{ offer.reason }}</p>
+        <li class="offer offer-{{ offer.response }}">
+          <div class="offer-head">
+            <strong>{{ offer.name }}</strong>
+            <span class="offer-stats">変更セル数 {{ offer.change_count }} / 希望違反数 {{ offer.preference_violations }} / {{ offer.solver_code }}</span>
+          </div>
+          <p class="offer-reason">{{ offer.reason }}</p>
           {% if vacancy.status == 'open' and offer.response == 'proposed' %}
           <form class="actions" method="post" action="/api/vacancies/{{ vacancy.id }}/ask">
             <input type="hidden" name="staff_id" value="{{ offer.staff_id }}">
@@ -90,15 +81,15 @@
             </form>
           </div>
           {% elif offer.response == 'declined' %}
-          <p>無理と応答済み</p>
+          <p class="state">無理と応答済み</p>
           {% elif offer.response == 'accepted' %}
-          <p>この案で確定</p>
+          <p class="state state-ok">この案で確定</p>
           {% elif vacancy.status == 'filled' %}
-          <p>この欠員はすでに充足しているため、この候補は入れていません。</p>
+          <p class="state">この欠員はすでに充足しているため、この候補は入れていません。</p>
           {% endif %}
         </li>
         {% endfor %}
-      </ul>
+      </ol>
       {% endif %}
       {% if vacancy.ineligible %}
       <details>
@@ -116,7 +107,7 @@
       </form>
       {% endif %}
       {% if vacancy.posting %}
-      <section>
+      <section class="posting">
         <h3>募集シミュレーション #{{ vacancy.posting.id }}（欠員#{{ vacancy.id }}）</h3>
         <p>{{ vacancy.posting.body }}</p>
         <p>状態: {{ vacancy.posting.status }}</p>
@@ -149,45 +140,81 @@
       {% endif %}
     </article>
     {% endfor %}
+    </section>
+    {% endif %}
 
-    <section>
-      <h2>勤務表</h2>
+    <section class="board" aria-labelledby="board-title">
+      <div class="board-head">
+        <h2 id="board-title">勤務表</h2>
+        <ul class="legend">
+          {% for item in snap.shift_legend %}
+          <li><span class="chip chip-{{ item.code }}">{{ item.label }}</span>{{ item.time }}</li>
+          {% endfor %}
+        </ul>
+        <p class="hint">
+          {% if snap.accepting_absence %}勤務のマスを押すと、その勤務を欠勤にして欠員を作ります。{% else %}欠員を埋め終わると、次の欠勤を入れられます。{% endif %}
+        </p>
+      </div>
       <div class="scroll">
         <table>
           <thead>
             <tr>
-              <th>スタッフ</th>
+              <th scope="col">スタッフ</th>
               {% for day in snap.dates %}
-              <th>{{ day.label }}</th>
+              <th scope="col" class="{% if '土' in day.label %}sat{% elif '日)' in day.label %}sun{% endif %}">{{ day.label }}</th>
               {% endfor %}
             </tr>
           </thead>
           <tbody>
             {% for person in snap.staff %}
             <tr>
-              <th>{{ person.name }}<span class="role">{{ person.role }}</span></th>
+              <th scope="row">{{ person.name }}<span class="role">{{ person.role }}</span></th>
               {% for cell in person.cells %}
-              <td class="{{ cell.kind }}">
+              <td class="cell {{ cell.kind }}{% if '希望外' in cell.text %} pref{% endif %}">
                 {% if cell.workable and snap.accepting_absence %}
                 <form class="cell-form" method="post" action="/api/vacancies">
                   <input type="hidden" name="staff_id" value="{{ person.id }}">
                   <input type="hidden" name="day" value="{{ cell.day }}">
-                  <button type="submit">{{ cell.text }}<br>この勤務を欠勤にする</button>
+                  <button type="submit" title="{{ person.name }} {{ snap.dates[cell.day].label }} {{ cell.text }}">
+                    <span class="glyph" aria-hidden="true">{{ cell.text[:1] }}</span>
+                    <span class="sr">{{ person.name }} {{ snap.dates[cell.day].label }} {{ cell.text }} この勤務を欠勤にする</span>
+                  </button>
                 </form>
+                {% elif cell.kind in ('D', 'E', 'N') %}
+                <span class="glyph" title="{{ cell.text }}">{{ cell.text[:1] }}</span><span class="sr">{{ cell.text }}</span>
+                {% elif cell.kind == 'OFF' %}
+                <span class="off">{{ cell.text }}</span>
                 {% else %}
-                {{ cell.text }}
+                <span class="mark">{{ cell.text }}</span>
                 {% endif %}
               </td>
               {% endfor %}
             </tr>
             {% endfor %}
           </tbody>
+          <tfoot>
+            {% for code in ('D', 'E', 'N') %}
+            {% set si = loop.index0 %}
+            <tr>
+              <th scope="row"><span class="chip chip-{{ code }}">{{ snap.coverage[0].shifts[si].label }}</span> 人数</th>
+              {% for day in snap.coverage %}
+              {% set shift = day.shifts[si] %}
+              <td class="count {% if shift.short %}is-short{% endif %}">
+                {{ shift.have }}/{{ shift.need }}{% if shift.short %}<span class="short-note">不足{{ shift.short }}人</span>{% endif %}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tfoot>
         </table>
       </div>
+      <div class="board-foot">
+        <p>{{ snap.roster.note }} 初期計算の計測時間: {{ snap.roster.solve_ms }} ms</p>
+        <form method="post" action="/api/reset">
+          <button class="secondary" type="submit">架空の勤務表を計算し直す</button>
+        </form>
+      </div>
     </section>
-    <form method="post" action="/api/reset">
-      <button class="secondary" type="submit">架空の勤務表を計算し直す</button>
-    </form>
   </main>
 </body>
 </html>

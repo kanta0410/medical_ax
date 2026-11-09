@@ -1,16 +1,20 @@
+/* 病棟の勤務表ボード: 勤務の色チップが主役。ほかは静かにする。 */
 :root {
-  --ink: #16302c;
-  --muted: #3e5c56;
-  --paper: #f3faf7;
-  --card: #ffffff;
-  --line: #c5ddd6;
-  --teal: #0f6e68;
-  --teal-deep: #0b3d3a;
-  --short: #9f1239;
-  --short-bg: #fff1f2;
-  --day: #e7f6f2;
-  --evening: #d9ecf7;
-  --night: #e7e9f6;
+  --paper: #f4f6f5;
+  --sheet: #ffffff;
+  --ink: #1c2530;
+  --muted: #5a6672;
+  --rule: #d7dde2;
+  --action: #1f5fa8;
+  --action-deep: #154478;
+  --alert: #c8231b;
+  --alert-bg: #fdecea;
+  --ok: #1e7a4e;
+  --ok-bg: #e6f4ec;
+  /* 勤務の色: 日勤=昼の光 / 準夜=夕方 / 深夜=夜 */
+  --day-bg: #ffe9a8;   --day-ink: #6b4a00;
+  --eve-bg: #ddd5f5;   --eve-ink: #3f2d7a;
+  --night-bg: #1f3b6e; --night-ink: #ffffff;
 }
 
 * { box-sizing: border-box; }
@@ -19,136 +23,222 @@ body {
   margin: 0;
   color: var(--ink);
   background: var(--paper);
-  font: 16px/1.5 "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+  font: 15px/1.6 "BIZ UDPGothic", "Hiragino Sans", "Yu Gothic", sans-serif;
+  font-variant-numeric: tabular-nums;
 }
 
+.sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* 架空データの帯: 細く、でも必ず見える */
 .banner {
-  /* sticky禁止: full_pageスクショで帯が中段に再描画され副題・人数帯に重なる */
-  position: relative;
-  z-index: 5;
-  background: var(--teal-deep);
+  margin: 0;
+  background: var(--ink);
   color: #fff;
   text-align: center;
+  font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  padding: 0.7rem 1rem;
+  padding: 0.35rem 1rem;
 }
 
+/* 見出しと状態を1行に */
+.ward {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem 2rem;
+  width: min(1320px, calc(100% - 2rem));
+  margin: 1.4rem auto 1rem;
+}
+.ward h1 { font-size: 1.6rem; line-height: 1.25; margin: 0 0 0.3rem; }
+.disclaimer { margin: 0; color: var(--muted); font-size: 0.85rem; max-width: 46em; }
+
+.metrics { display: flex; gap: 0.5rem; margin: 0; }
+.metrics div {
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 0.35rem 0.8rem;
+  display: flex; align-items: baseline; gap: 0.6rem;
+}
+.metrics dt { font-size: 0.78rem; color: var(--muted); }
+.metrics dd { margin: 0; font-size: 1.35rem; font-weight: 700; }
+.metrics .is-alert { border-color: var(--alert); background: var(--alert-bg); }
+.metrics .is-alert dd, .metrics .is-alert dt { color: var(--alert); }
+
 main {
-  width: min(1180px, calc(100% - 2rem));
+  width: min(1320px, calc(100% - 2rem));
   margin: 0 auto 3rem;
 }
 
-h1 { font-size: 1.7rem; margin: 1rem 0 0.3rem; }
-h2 { font-size: 1.15rem; margin: 0 0 0.6rem; }
-
-.disclaimer { color: var(--muted); margin-top: 0; }
-
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.7rem;
-  margin: 1rem 0;
-}
-
-.metrics div, .card, .status {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-}
-
-.metrics div { padding: 0.8rem 1rem; }
-.metrics strong { display: block; font-size: 1.6rem; color: var(--teal-deep); }
-.metrics span { color: var(--muted); font-size: 0.92rem; }
-
-.status, .card { padding: 1rem; margin: 0.8rem 0 1rem; }
-.status p { margin: 0.3rem 0; }
+h2 { font-size: 1.1rem; margin: 0; }
+h3 { font-size: 1rem; margin: 0 0 0.4rem; }
 
 .alert {
-  background: var(--short-bg);
-  color: var(--short);
-  border: 1px solid var(--short);
-  border-radius: 12px;
-  padding: 0.8rem 1rem;
-}
-
-.legend { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; margin: 0.4rem 0 0; list-style: none; }
-.legend li { border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.7rem; background: #fff; }
-
-.vacancy { border-left: 6px solid var(--short); }
-.vacancy header { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
-.tag {
-  color: var(--short);
+  background: var(--alert-bg);
+  color: var(--alert);
+  border: 1px solid var(--alert);
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
   font-weight: 700;
 }
-.offers { list-style: none; padding: 0; display: grid; gap: 0.7rem; }
-.offer { border: 1px solid var(--line); border-radius: 12px; padding: 0.8rem; }
+
+/* 勤務の色チップ */
+.chip {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 0 0.45em;
+  font-size: 0.85em;
+  font-weight: 700;
+  line-height: 1.6;
+}
+.chip-D { background: var(--day-bg); color: var(--day-ink); }
+.chip-E { background: var(--eve-bg); color: var(--eve-ink); }
+.chip-N { background: var(--night-bg); color: var(--night-ink); }
+
+/* 欠員: いま動くもの。勤務表の上に置く */
+.vacancies { display: grid; gap: 0.8rem; margin-bottom: 1.2rem; }
+.vacancy {
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-left: 6px solid var(--alert);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  display: grid;
+  gap: 0.6rem;
+}
+.vacancy.is-filled { border-left-color: var(--ok); }
+.vacancy header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.4rem 1rem; align-items: baseline; }
+.vacancy .tag { margin: 0; font-weight: 700; color: var(--alert); }
+.vacancy.is-filled .tag { color: var(--ok); }
+.vacancy .lead { margin: 0; font-weight: 700; }
+.vacancy .note { margin: 0; color: var(--muted); font-size: 0.85rem; max-width: 60em; }
+
+.offers {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  max-height: min(48vh, 32rem); overflow-y: auto;
+}
+.offer { border: 1px solid var(--rule); border-radius: 8px; padding: 0.7rem 0.8rem; }
+.offer-asked { border-color: var(--action); box-shadow: inset 3px 0 0 var(--action); }
+.offer-accepted { border-color: var(--ok); background: var(--ok-bg); }
+.offer-declined { opacity: 0.6; }
+.offer-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.2rem 0.6rem; align-items: baseline; }
+.offer-stats { font-size: 0.78rem; color: var(--muted); }
+.offer-reason { margin: 0.3rem 0 0; font-size: 0.85rem; }
+.state { margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--muted); }
+.state-ok { color: var(--ok); font-weight: 700; }
+
+.vacancy details {
+  border: 1px solid var(--rule); border-radius: 8px;
+  padding: 0.4rem 0.8rem; font-size: 0.85rem;
+}
+.vacancy details[open] { max-height: 16rem; overflow-y: auto; }
+.posting { border-top: 1px solid var(--rule); padding-top: 0.8rem; }
+.posting p { margin: 0.2rem 0; }
+
 .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+.actions form { margin: 0; }
 
 button {
-  background: var(--teal);
+  background: var(--action);
   color: #fff;
   border: 0;
-  border-radius: 10px;
+  border-radius: 6px;
   min-height: 44px;
-  padding: 0.4rem 0.8rem;
+  padding: 0.4rem 0.9rem;
   font: inherit;
+  font-weight: 700;
   cursor: pointer;
 }
-button.secondary { background: #fff; color: var(--teal-deep); border: 1px solid var(--teal); }
-button.danger { background: var(--short); }
+button:hover { background: var(--action-deep); }
+button.secondary { background: var(--sheet); color: var(--action-deep); border: 1px solid var(--action); }
+button.secondary:hover { background: #eef3fa; }
+button.danger { background: var(--alert); }
 button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 2px; }
 
-.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
-table { border-collapse: collapse; min-width: 980px; width: 100%; }
-th, td { border-bottom: 1px solid var(--line); padding: 0.35rem; text-align: center; font-size: 0.82rem; }
-th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: #fff; min-width: 8rem; }
-.role { display: block; color: var(--muted); font-weight: 400; }
-.D { background: var(--day); }
-.E { background: var(--evening); }
-.N { background: var(--night); }
-.short { background: var(--short-bg); color: var(--short); font-weight: 700; box-shadow: inset 0 0 0 2px var(--short); }
-.absent { color: var(--muted); }
-.filled { background: #ecfdf3; font-weight: 700; }
-.cell-form { margin: 0; }
-.cell-form button { min-height: 36px; padding: 0.2rem 0.35rem; font-size: 0.75rem; background: transparent; color: inherit; }
+/* 勤務表ボード */
+.board { background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; }
+.board-head {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 0.5rem 1.4rem; padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--rule);
+}
+.legend { display: flex; flex-wrap: wrap; gap: 0.9rem; margin: 0; padding: 0; list-style: none; font-size: 0.82rem; color: var(--muted); }
+.legend .chip { margin-right: 0.35rem; }
+.hint { margin: 0 0 0 auto; font-size: 0.82rem; color: var(--muted); }
 
-.coverage { display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 0.4rem; }
-.day-count { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 0.4rem 0.5rem; min-width: 7rem; }
-.day-count p { margin: 0.15rem 0; }
-.short-line { color: var(--short); font-weight: 700; }
+.scroll { overflow-x: auto; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 900px; }
+th, td { padding: 0; text-align: center; font-size: 0.82rem; border-bottom: 1px solid #eef1f3; }
+thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--sheet); color: var(--muted); font-weight: 700;
+  padding: 0.5rem 0.2rem; border-bottom: 1px solid var(--rule); white-space: nowrap;
+}
+thead th.sat { color: #1f5fa8; }
+thead th.sun { color: var(--alert); }
+tbody th, tfoot th {
+  position: sticky; left: 0; z-index: 1;
+  background: var(--sheet); text-align: left;
+  padding: 0.35rem 0.8rem; min-width: 8.5rem; white-space: nowrap;
+  border-right: 1px solid var(--rule);
+}
+thead th:first-child { left: 0; z-index: 3; text-align: left; padding-left: 0.8rem; border-right: 1px solid var(--rule); }
+.role { display: block; color: var(--muted); font-weight: 400; font-size: 0.72rem; }
 
-@media (max-width: 700px) {
-  .metrics { grid-template-columns: 1fr; }
-  main { width: min(100% - 1rem, 1180px); }
+/* マス: 勤務の色チップがマス一杯に入る */
+td.cell { height: 2.6rem; padding: 3px; }
+.cell .glyph, .cell-form button {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; min-height: 0;
+  border-radius: 5px; font-weight: 700; font-size: 0.95rem;
+  padding: 0; margin: 0;
+}
+.cell.D .glyph { background: var(--day-bg); color: var(--day-ink); }
+.cell.E .glyph { background: var(--eve-bg); color: var(--eve-ink); }
+.cell.N .glyph { background: var(--night-bg); color: var(--night-ink); }
+.cell-form { margin: 0; height: 100%; }
+.cell-form button { background: transparent; color: inherit; border: 0; position: relative; }
+.cell-form button .glyph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 5px; }
+.cell-form button:hover .glyph,
+.cell-form button:focus-visible .glyph { box-shadow: inset 0 0 0 2px var(--alert); }
+.cell-form button:hover::after {
+  content: "欠勤"; position: absolute; transform: translateY(1.35rem);
+  font-size: 0.65rem; color: var(--alert); font-weight: 700;
+}
+.cell.pref .glyph { background-image: linear-gradient(135deg, transparent 72%, var(--alert) 72%); }
+.off { color: #a3adb6; font-size: 0.75rem; }
+.mark { display: block; font-size: 0.68rem; line-height: 1.3; padding: 0.15rem; border-radius: 5px; }
+.cell.short .mark { background: var(--alert-bg); color: var(--alert); font-weight: 700; box-shadow: inset 0 0 0 2px var(--alert); }
+.cell.filled .mark { background: var(--ok-bg); color: var(--ok); font-weight: 700; }
+.cell.absent .mark { color: var(--muted); text-decoration: line-through; }
+
+/* 下の人数の行: 足りない日だけ赤 */
+tfoot th { font-size: 0.8rem; font-weight: 700; background: #f8fafb; }
+tfoot td { background: #f8fafb; padding: 0.35rem 0.2rem; font-weight: 700; color: var(--muted); }
+tfoot tr:first-child th, tfoot tr:first-child td { border-top: 2px solid var(--rule); }
+td.count.is-short { background: var(--alert-bg); color: var(--alert); }
+.short-note { display: block; font-size: 0.68rem; }
+
+.board-foot {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+  gap: 0.6rem 1rem; padding: 0.8rem 1.1rem; border-top: 1px solid var(--rule);
+  font-size: 0.82rem; color: var(--muted);
+}
+.board-foot p { margin: 0; }
+.board-foot form { margin: 0; }
+
+@media (max-width: 760px) {
+  .ward, main { width: calc(100% - 2rem); }
+  .metrics { flex-wrap: wrap; }
+  .hint { margin-left: 0; }
 }
 
-/* edge-demo: sticky vacancy + scroll offers */
-.vacancy {
-  display: grid;
-  gap: 0.7rem;
-}
-.vacancy header {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  background: var(--card);
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--line);
-}
-.offers {
-  max-height: min(42vh, 28rem);
-  overflow-y: auto;
-  padding-right: 0.2rem;
-  scroll-margin-top: 6rem;
-}
-.vacancy details {
-  background: #f8fbfa;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 0.4rem 0.7rem;
-}
-.vacancy details[open] {
-  max-height: min(30vh, 16rem);
-  overflow-y: auto;
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
 }
